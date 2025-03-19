@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Crossword Puzzle</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        .crossword-container {
+            display: grid;
+            gap: 2px;
+            background-color: #ccc;
+            padding: 10px;
+        }
+        .cell {
+            width: 50px; /* Increased from 30px */
+            height: 50px; /* Increased from 30px */
+            background-color: white;
+            border: 1px solid #999;
+            text-align: center;
+            font-size: 24px; /* Adjusted for larger cell */
+            line-height: 50px;
+            text-transform: uppercase;
+            position: relative; /* For positioning clue numbers */
+        }
+        .cell.black {
+            background-color: black;
+        }
+        .cell input {
+            width: 100%;
+            height: 100%;
+            border: none;
+            text-align: center;
+            font-size: 24px;
+            text-transform: uppercase;
+            padding: 0;
+        }
+        .clue-number {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            font-size: 10px; /* Very small numbers */
+            color: #333;
+        }
+        .clues {
+            margin-top: 20px;
+            max-width: 600px;
+        }
+        .clues h2 {
+            margin-bottom: 10px;
+        }
+        .clues ul {
+            list-style: none;
+            padding: 0;
+        }
+        .clues li {
+            margin: 5px 0;
+        }
+        select, button {
+            margin: 10px;
+            padding: 10px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Crossword Puzzle Generator</h1>
+    <select id="subject">
+        <option value="">Select a Subject</option>
+        <option value="distributed_computing">Distributed Computing</option>
+        <option value="social_media_analytics">Social Computing</option>
+        <option value="deep_learning">Deep Learning</option>
+        <option value="information_storage_retrieval">Information Storage and Retrieval</option>
+        <option value="startups_entrepreneurship">Startups and Entrepreneurship</option>
+    </select>
+    <button onclick="generateCrossword()">Generate Crossword</button>
+    <div class="crossword-container" id="crossword"></div>
+    <div class="clues" id="clues"></div>
+    <button id="checkBtn" onclick="checkAnswers()" style="display: none;">Check Answers</button>
+
+    <script>
+        const subjects = {
+            distributed_computing: [
+                { word: "CLUSTER", clue: "Group of interconnected computers" },
+                { word: "SCALABILITY", clue: "Ability to handle increased load" },
+                { word: "PARALLEL", clue: "Simultaneous task execution" },
+                { word: "NODE", clue: "Individual computer in a network" },
+                { word: "GRID", clue: "Distributed resource sharing system" },
+                { word: "LOADBALANCING", clue: "Distributing tasks evenly" },
+                { word: "FAULTTOLERANCE", clue: "System resilience to failures" },
+                { word: "HADOOP", clue: "Big data processing framework" },
+                { word: "SPARK", clue: "Fast data processing engine" },
+                { word: "MAPREDUCE", clue: "Programming model for data" },
+                { word: "DISTRIBUTION", clue: "Spreading tasks across systems" },
+                { word: "SYNCHRONIZATION", clue: "Coordination of processes" },
+                { word: "LATENCY", clue: "Delay in data transfer" },
+                { word: "THROUGHPUT", clue: "Rate of task completion" },
+                { word: "CONSENSUS", clue: "Agreement in distributed systems" }
+            ],
+            social_media_analytics: [
+                { word: "ENGAGEMENT", clue: "Interaction rate with posts" },
+                { word: "HASHTAG", clue: "Word or phrase with #" },
+                { word: "SENTIMENT", clue: "Emotional tone analysis" },
+                { word: "METRICS", clue: "Key performance indicators" },
+                { word: "INFLUENCE", clue: "Impact of a user" },
+                { word: "REACH", clue: "Audience exposure" },
+                { word: "ANALYTICS", clue: "Data-driven insights" },
+                { word: "VIRALITY", clue: "Spread of content" },
+                { word: "TRENDING", clue: "Popular topics" },
+                { word: "IMPRESSIONS", clue: "Number of views" },
+                { word: "CONVERSION", clue: "Action from exposure" },
+                { word: "NETWORK", clue: "Connections between users" },
+                { word: "CONTENT", clue: "Posts and media" },
+                { word: "PLATFORM", clue: "Social media site" },
+                { word: "CAMPAIGN", clue: "Marketing effort" }
+            ],
+            deep_learning: [
+                { word: "NEURALNET", clue: "Artificial brain model" },
+                { word: "BACKPROP", clue: "Error correction method" },
+                { word: "ACTIVATION", clue: "Neuron firing function" },
+                { word: "CONVOLUTION", clue: "Feature extraction layer" },
+                { word: "OVERFITTING", clue: "Model too specific to data" },
+                { word: "EPOCH", clue: "Full training cycle" },
+                { word: "GRADIENT", clue: "Optimization slope" },
+                { word: "TENSOR", clue: "Multidimensional data" },
+                { word: "DROPOUT", clue: "Regularization technique" },
+                { word: "OPTIMIZER", clue: "Learning adjustment tool" },
+                { word: "LOSS", clue: "Prediction error" },
+                { word: "RELU", clue: "Common activation function" },
+                { word: "BATCH", clue: "Data subset for training" },
+                { word: "LAYERS", clue: "Network depth" },
+                { word: "TRAINING", clue: "Model learning phase" }
+            ],
+            information_storage_retrieval: [
+                { word: "DATABASE", clue: "Organized data storage" },
+                { word: "INDEXING", clue: "Speeding up searches" },
+                { word: "QUERY", clue: "Data retrieval request" },
+                { word: "RETRIEVAL", clue: "Accessing stored info" },
+                { word: "STORAGE", clue: "Data preservation" },
+                { word: "SEARCH", clue: "Finding information" },
+                { word: "METADATA", clue: "Data about data" },
+                { word: "ARCHIVE", clue: "Long-term storage" },
+                { word: "BACKUP", clue: "Data redundancy" },
+                { word: "CACHING", clue: "Temporary fast storage" },
+                { word: "SCHEMA", clue: "Data structure blueprint" },
+                { word: "DOCUMENT", clue: "Stored text file" },
+                { word: "KEYWORD", clue: "Search term" },
+                { word: "RELEVANCE", clue: "Search result accuracy" },
+                { word: "FILESYSTEM", clue: "Data organization method" }
+            ],
+            startups_entrepreneurship: [
+                { word: "PITCH", clue: "Business idea presentation" },
+                { word: "FUNDING", clue: "Financial support" },
+                { word: "STARTUP", clue: "New business venture" },
+                { word: "INNOVATION", clue: "Novel idea or product" },
+                { word: "SCALING", clue: "Growth expansion" },
+                { word: "PIVOT", clue: "Strategy change" },
+                { word: "VENTURE", clue: "Risky business project" },
+                { word: "PROTOTYPE", clue: "Initial model" },
+                { word: "MARKET", clue: "Target audience" },
+                { word: "REVENUE", clue: "Income generated" },
+                { word: "BOOTSTRAP", clue: "Self-funding" },
+                { word: "INCUBATOR", clue: "Startup support hub" },
+                { word: "EQUITY", clue: "Ownership share" },
+                { word: "MENTOR", clue: "Experienced advisor" },
+                { word: "TRACTION", clue: "Proof of demand" }
+            ]
+        };
+
+        let puzzleGrid = [];
+        let correctAnswers = {};
+        let gridSize = 15;
+        let cluePositions = {}; // To track clue numbers and their positions
+
+        function generateCrossword() {
+            const subject = document.getElementById('subject').value;
+            if (!subject) {
+                alert('Please select a subject!');
+                return;
+            }
+
+            const concepts = subjects[subject].sort(() => 0.5 - Math.random()).slice(0, 15);
+            gridSize = Math.max(...concepts.map(c => c.word.length)) + 5;
+            puzzleGrid = Array(gridSize).fill().map(() => Array(gridSize).fill(' '));
+            correctAnswers = {};
+            cluePositions = {};
+            let acrossNum = 1, downNum = 1;
+
+            concepts.forEach((concept) => {
+                const word = concept.word.toUpperCase();
+                let placed = false;
+                while (!placed) {
+                    const direction = Math.random() > 0.5 ? 'across' : 'down';
+                    const row = Math.floor(Math.random() * gridSize);
+                    const col = Math.floor(Math.random() * gridSize);
+                    if (canPlaceWord(word, row, col, direction)) {
+                        const clueNum = `${direction === 'across' ? acrossNum++ : downNum++}-${direction}`;
+                        placeWord(word, row, col, direction, clueNum, concept.clue);
+                        cluePositions[clueNum] = { row, col }; // Store starting position
+                        placed = true;
+                    }
+                }
+            });
+
+            renderCrossword();
+            renderClues();
+            document.getElementById('checkBtn').style.display = 'block';
+        }
+
+        function canPlaceWord(word, row, col, direction) {
+            if (direction === 'across') {
+                if (col + word.length > gridSize) return false;
+                for (let i = 0; i < word.length; i++) {
+                    const cell = puzzleGrid[row][col + i];
+                    if (cell !== ' ' && cell !== word[i]) return false;
+                }
+            } else {
+                if (row + word.length > gridSize) return false;
+                for (let i = 0; i < word.length; i++) {
+                    const cell = puzzleGrid[row + i][col];
+                    if (cell !== ' ' && cell !== word[i]) return false;
+                }
+            }
+            return true;
+        }
+
+        function placeWord(word, row, col, direction, clueNum, clue) {
+            correctAnswers[clueNum] = word;
+            if (direction === 'across') {
+                for (let i = 0; i < word.length; i++) {
+                    puzzleGrid[row][col + i] = word[i];
+                }
+            } else {
+                for (let i = 0; i < word.length; i++) {
+                    puzzleGrid[row + i][col] = word[i];
+                }
+            }
+        }
+
+        function renderCrossword() {
+            const container = document.getElementById('crossword');
+            container.innerHTML = '';
+            container.style.gridTemplateColumns = `repeat(${gridSize}, 50px)`; /* Adjusted for larger cells */
+            container.style.gridTemplateRows = `repeat(${gridSize}, 50px)`; /* Adjusted for larger cells */
+
+            for (let i = 0; i < gridSize; i++) {
+                for (let j = 0; j < gridSize; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    if (puzzleGrid[i][j] === ' ') {
+                        cell.classList.add('black');
+                    } else {
+                        const input = document.createElement('input');
+                        input.maxLength = 1;
+                        input.dataset.row = i;
+                        input.dataset.col = j;
+                        cell.appendChild(input);
+
+                        // Add clue number if this is a starting position
+                        for (let key in cluePositions) {
+                            const { row, col } = cluePositions[key];
+                            if (i === row && j === col) {
+                                const num = key.split('-')[0];
+                                const clueNum = document.createElement('span');
+                                clueNum.className = 'clue-number';
+                                clueNum.textContent = num;
+                                cell.appendChild(clueNum);
+                            }
+                        }
+                    }
+                    container.appendChild(cell);
+                }
+            }
+        }
+
+        function renderClues() {
+            const cluesDiv = document.getElementById('clues');
+            cluesDiv.innerHTML = '<h2>Across</h2><ul id="across"></ul><h2>Down</h2><ul id="down"></ul>';
+            const acrossList = document.getElementById('across');
+            const downList = document.getElementById('down');
+
+            Object.keys(correctAnswers).forEach(key => {
+                const [num, dir] = key.split('-');
+                const li = document.createElement('li');
+                li.textContent = `${num}. ${subjects[document.getElementById('subject').value].find(c => c.word.toUpperCase() === correctAnswers[key]).clue}`;
+                if (dir === 'across') acrossList.appendChild(li);
+                else downList.appendChild(li);
+            });
+        }
+
+        function checkAnswers() {
+            const inputs = document.querySelectorAll('.cell input');
+            let userGrid = Array(gridSize).fill().map(() => Array(gridSize).fill(' '));
+            inputs.forEach(input => {
+                userGrid[input.dataset.row][input.dataset.col] = input.value.toUpperCase();
+            });
+
+            let correct = true;
+            for (let key in correctAnswers) {
+                const [num, dir] = key.split('-');
+                const word = correctAnswers[key];
+                const { row, col } = cluePositions[key];
+                if (dir === 'across' && userGrid[row].slice(col, col + word.length).join('') !== word) correct = false;
+                if (dir === 'down' && userGrid.slice(row, row + word.length).map(r => r[col]).join('') !== word) correct = false;
+            }
+            alert(correct ? 'Congratulations! All answers are correct!' : 'Some answers are incorrect. Try again!');
+        }
+    </script>
+</body>
+</html>
